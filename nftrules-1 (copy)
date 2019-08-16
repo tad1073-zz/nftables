@@ -1,0 +1,157 @@
+# IPv4 Nat Table
+#add table ip nat
+#add chain ip nat PREROUTING { type nat hook prerouting priority 0; policy accept; }
+#add chain ip nat INPUT { type nat hook input priority 0; policy accept; }
+#add chain ip nat OUTPUT { type nat hook output priority 0; policy accept; }
+#add chain ip nat POSTROUTING { type nat hook postrouting priority 0; policy accept; }
+
+# IPv4 Mangle Table
+#add table ip mangle
+#add chain ip mangle PREROUTING { type filter hook prerouting priority 0; policy accept; }
+#add chain ip mangle INPUT { type filter hook input priority 0; policy accept; }
+#add chain ip mangle FORWARD { type filter hook forward priority 0; policy accept; }
+#add chain ip mangle OUTPUT { type filter hook output priority 0; policy accept; }
+#add chain ip mangle POSTROUTING { type filter hook postrouting priority 0; policy accept; }
+
+# INET Filter Table
+add table inet filter
+
+# INET INPUT Filter Rules
+add chain inet filter INPUT { type filter hook input priority 0; policy drop;}
+
+add rule inet filter INPUT tcp dport 25672-25680 drop
+add rule inet filter INPUT tcp sport 25672-25680 drop
+
+# accept any localhost traffic
+add rule inet filter INPUT iif lo accept
+
+# accept traffic originated from us
+add rule inet filter INPUT ct state established,related accept
+
+# accept neighbour discovery otherwise IPv6 connectivity breaks.
+add rule inet filter INPUT ip6 nexthdr icmpv6 icmpv6 type { nd-neighbor-solicit,  nd-router-advert, nd-neighbor-advert } accept
+
+# count and drop any other traffic
+add inet filter INPUT counter drop
+
+# IPv4 Filter Table
+add table ip filter
+
+# IPv4 INPUT Filter Rules
+add chain ip filter INPUT { type filter hook input priority 0; policy drop; }
+add chain ip filter FORWARD { type filter hook forward priority 0; policy drop; }
+add chain ip filter OUTPUT { type filter hook output priority 0; policy accept; }
+add rule ip filter INPUT ip saddr SRC ADDR HERE counter accept
+add rule ip filter INPUT ct state invalid counter drop
+add rule ip filter INPUT ip saddr { 81.22.45.0/24, 193.29.13.0/24} counter drop
+add rule ip filter INPUT ct state new tcp flags & (fin|syn|rst|ack) != syn counter drop
+add rule ip filter INPUT ct state new tcp flags & (fin|syn|rst|ack) != syn counter log prefix "IPTABLES: "
+add rule ip filter INPUT iifname != lo ip saddr 127.0.0.0/8 counter drop
+add rule ip filter INPUT iifname != lo ip saddr 127.0.0.0/8 counter log prefix "IPTABLES: "
+add rule ip filter INPUT iifname lo ip saddr 127.0.0.1 counter accept
+add rule ip filter INPUT iifname lo accept
+add rule ip filter INPUT ip daddr 224.0.0.0/4 counter drop
+add rule ip filter INPUT ct state new icmp type echo-request counter log prefix "IPTABLES: "
+add rule ip filter INPUT ct state new tcp dport 113 tcp flags & (fin|syn|rst|ack) == syn counter reject with tcp reset
+add rule ip filter INPUT ct state new tcp dport 113 tcp flags & (fin|syn|rst|ack) == syn counter log prefix "IPTABLES: "
+add rule ip filter INPUT icmp type address-mask-request counter reject
+add rule ip filter INPUT icmp type address-mask-request counter log prefix "IPTABLES: "
+add rule ip filter INPUT icmp type timestamp-request counter reject
+add rule ip filter INPUT icmp type timestamp-request counter log prefix "IPTABLES: "
+add rule ip filter INPUT ip saddr { 8.8.8.8, 8.8.4.4} ct state related,established counter accept
+add rule ip filter INPUT tcp dport { 80,443} ct state related,established counter accept
+add rule ip filter INPUT udp dport { 80,443} ct state related,established counter accept
+add rule ip filter INPUT ip saddr NET ADDR HERE tcp dport { 139,445} ct state related,established counter accept
+add rule ip filter INPUT ip saddr NET ADDR HERE udp dport { 137,138} ct state related,established counter accept
+add rule ip filter INPUT ip saddr SRC ADDR HERE tcp dport 2202 ct state related,established counter accept
+add rule ip filter INPUT limit rate 1/second burst 100 packets counter log prefix "IPTABLES: "
+add rule ip filter INPUT ct state related,established counter accept
+add rule ip filter INPUT counter drop
+
+# IPv4 FORWARD Filter Rules
+add rule ip filter FORWARD ct state new  tcp flags & (fin|syn|rst|ack) != syn counter drop
+add rule ip filter FORWARD ct state invalid  counter drop
+add rule ip filter FORWARD counter drop
+
+# IPv4 OUTPUT Filter Rules
+add rule ip filter OUTPUT ct state invalid  counter drop
+add rule ip filter OUTPUT ip daddr { 81.22.45.0/24, 193.29.13.0/24} counter drop
+add rule ip filter OUTPUT tcp flags & (fin|syn|rst|ack) != syn ct state new  counter drop
+add rule ip filter OUTPUT oifname != lo ip saddr 127.0.0.0/8 counter drop
+add rule ip filter OUTPUT oifname lo counter accept
+add rule ip filter OUTPUT ip saddr SRC ADDR HERE ct state related,established counter accept
+add rule ip filter OUTPUT tcp dport { 80,443} ct state related,established counter accept
+add rule ip filter OUTPUT udp dport { 80,443} ct state related,established counter accept
+add rule ip filter OUTPUT ip daddr { 8.8.8.8, 8.8.4.4 } counter accept
+add rule ip filter OUTPUT udp sport 123 udp dport 123 counter accept
+add rule ip filter OUTPUT tcp dport { 139,445} ct state related,established counter accept
+add rule ip filter OUTPUT udp dport { 137,138} ct state related,established counter accept
+add rule ip filter OUTPUT tcp dport 2202 ct state related,established counter accept
+add rule ip filter OUTPUT udp dport 2202 ct state related,established counter accept
+add rule ip filter OUTPUT ct state related,established counter accept
+add rule ip filter OUTPUT counter accept
+
+# IPv6 Filter Table
+add table ip6 filter
+
+# IPv6 INPUT Filter Rules
+add chain ip6 filter INPUT { type filter hook input priority 0; policy drop; }
+add chain ip6 filter FORWARD { type filter hook forward priority 0; policy drop; }
+add chain ip6 filter OUTPUT { type filter hook output priority 0; policy accept; }
+add rule ip6 filter INPUT ip6 saddr IPv6 ADDR HERE ADDR HERE counter accept
+add rule ip6 filter INPUT ct state invalid counter drop
+add rule ip6 filter INPUT ct state new tcp flags & (fin|syn|rst|ack) != syn counter drop
+add rule ip6 filter INPUT ct state new tcp flags & (fin|syn|rst|ack) != syn counter log prefix "IPTABLES: "
+add rule ip6 filter INPUT iifname != lo ip6 saddr ::1 counter drop
+add rule ip6 filter INPUT iifname != lo ip6 saddr ::1 counter log prefix "IPTABLES: "
+add rule ip6 filter INPUT iifname != lo counter drop
+add rule ip6 filter INPUT iifname != lo counter log prefix "IPTABLES: "
+add rule ip6 filter INPUT ip6 saddr IPv6 ADDR HERE ADDR HERE tcp dport { 80,443} ct state related,established counter accept
+add rule ip6 filter INPUT ip6 saddr IPv6 ADDR HERE ADDR HERE udp dport { 80,443} ct state related,established counter accept
+add rule ip6 filter INPUT ip6 saddr { 2001:4860:4860::8888, 2001:4860:4860::8844} ip6 daddr IPv6 ADDR HERE ADDR HERE counter accept
+add rule ip6 filter INPUT ip6 saddr fe80::/64 tcp dport { 139,445} ct state related,established counter accept
+add rule ip6 filter INPUT ip6 saddr fe80::/64 udp dport { 137,138} ct state related,established counter accept
+add rule ip6 filter INPUT ip6 saddr IPv6 ADDR HERE ADDR HERE tcp dport 2202 counter accept
+add rule ip6 filter INPUT iifname lo ip6 saddr ::1 counter accept
+add rule ip6 filter INPUT iifname lo counter accept
+add rule ip6 filter INPUT ct state related,established counter accept
+add rule ip6 filter INPUT counter drop
+
+# IPv6 FORWARD Filter Rules
+add rule ip6 filter FORWARD ct state new  tcp flags & (fin|syn|rst|ack) != syn counter drop
+add rule ip6 filter FORWARD ct state invalid  counter drop
+add rule ip6 filter FORWARD counter drop
+
+# IPv6 OUTPUT Filter Rules
+add rule ip6 filter OUTPUT ip6 saddr IPv6 ADDR HERE ADDR HERE counter accept
+add rule ip6 filter OUTPUT ct state new  tcp flags & (fin|syn|rst|ack) != syn counter drop
+add rule ip6 filter OUTPUT ct state invalid  counter drop
+add rule ip6 filter OUTPUT oifname != lo ip6 saddr ::1 counter drop
+add rule ip6 filter OUTPUT ip6 daddr { 2001:4860:4860::8888, 2001:4860:4860::8844} ip6 saddr IPv6 ADDR HERE ADDR HERE counter accept
+add rule ip6 filter OUTPUT oifname lo ip6 saddr ::1 counter accept
+add rule ip6 filter OUTPUT oifname lo counter accept
+add rule ip6 filter OUTPUT tcp dport { 80,443} ct state related,established counter accept
+add rule ip6 filter OUTPUT udp dport { 80,443} ct state related,established counter accept
+add rule ip6 filter OUTPUT udp sport 123 udp dport 123 counter accept
+add rule ip6 filter OUTPUT tcp dport { 139,445} ct state related,established counter accept
+add rule ip6 filter OUTPUT udp dport { 137,138} ct state related,established counter accept
+add rule ip6 filter OUTPUT tcp dport 2202 ct state related,established counter accept
+add rule ip6 filter OUTPUT udp dport 2202 ct state related,established counter accept
+add rule ip6 filter OUTPUT ct state related,established counter accept
+add rule ip6 filter OUTPUT counter accept
+
+# IPv6 Nat Table
+#add table ip6 nat
+#add chain ip6 nat PREROUTING { type nat hook prerouting priority 0; policy accept; }
+#add chain ip6 nat INPUT { type nat hook input priority 0; policy accept; }
+#add chain ip6 nat OUTPUT { type nat hook output priority 0; policy accept; }
+#add chain ip6 nat POSTROUTING { type nat hook postrouting priority 0; policy accept; }
+
+# IPv6 Mangle Table
+#add table ip6 mangle
+#add chain ip6 mangle PREROUTING { type filter hook prerouting priority 0; policy accept; }
+#add chain ip6 mangle INPUT { type filter hook input priority 0; policy accept; }
+#add chain ip6 mangle FORWARD { type filter hook forward priority 0; policy accept; }
+#add chain ip6 mangle OUTPUT { type filter hook output priority 0; policy accept; }
+#add chain ip6 mangle POSTROUTING { type filter hook postrouting priority 0; policy accept; }
+# Completed on Thu Aug  8 04:30:42 2019
