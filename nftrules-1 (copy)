@@ -63,7 +63,7 @@ add rule ip filter INPUT tcp dport { 80,443} ct state related,established counte
 add rule ip filter INPUT udp dport { 80,443} ct state related,established counter accept
 add rule ip filter INPUT ip saddr NET ADDR HERE tcp dport { 139,445} ct state related,established counter accept
 add rule ip filter INPUT ip saddr NET ADDR HERE udp dport { 137,138} ct state related,established counter accept
-add rule ip filter INPUT ip saddr SRC ADDR HERE tcp dport 2202 ct state related,established counter accept
+add rule ip filter INPUT ip saddr SRC ADDR HERE tcp dport 22 ct state related,established counter accept
 add rule ip filter INPUT limit rate 1/second burst 100 packets counter log prefix "IPTABLES: "
 add rule ip filter INPUT ct state related,established counter accept
 add rule ip filter INPUT counter drop
@@ -86,8 +86,8 @@ add rule ip filter OUTPUT ip daddr { 8.8.8.8, 8.8.4.4 } counter accept
 add rule ip filter OUTPUT udp sport 123 udp dport 123 counter accept
 add rule ip filter OUTPUT tcp dport { 139,445} ct state related,established counter accept
 add rule ip filter OUTPUT udp dport { 137,138} ct state related,established counter accept
-add rule ip filter OUTPUT tcp dport 2202 ct state related,established counter accept
-add rule ip filter OUTPUT udp dport 2202 ct state related,established counter accept
+add rule ip filter OUTPUT tcp dport 22 ct state related,established counter accept
+add rule ip filter OUTPUT udp dport 22 ct state related,established counter accept
 add rule ip filter OUTPUT ct state related,established counter accept
 add rule ip filter OUTPUT counter accept
 
@@ -135,8 +135,8 @@ add rule ip6 filter OUTPUT udp dport { 80,443} ct state related,established coun
 add rule ip6 filter OUTPUT udp sport 123 udp dport 123 counter accept
 add rule ip6 filter OUTPUT tcp dport { 139,445} ct state related,established counter accept
 add rule ip6 filter OUTPUT udp dport { 137,138} ct state related,established counter accept
-add rule ip6 filter OUTPUT tcp dport 2202 ct state related,established counter accept
-add rule ip6 filter OUTPUT udp dport 2202 ct state related,established counter accept
+add rule ip6 filter OUTPUT tcp dport 22 ct state related,established counter accept
+add rule ip6 filter OUTPUT udp dport 22 ct state related,established counter accept
 add rule ip6 filter OUTPUT ct state related,established counter accept
 add rule ip6 filter OUTPUT counter accept
 
