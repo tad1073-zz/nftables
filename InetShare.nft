@@ -5,9 +5,12 @@
 flush ruleset
 
 table inet filter {
+        chain REALATED_ESTABLISHED {
+                type filter hook input priority filter; policy drop;
+                ct state related,established counter accept
 	chain INPUT {
-		type filter hook input priority filter; policy drop;
-		ip6 saddr ###---Your IPv6 Addr Here---### ct state established,related counter packets 0 bytes 0 accept
+		
+		ip6 saddr ###---Your IPv6 Addr Here---### counter jump REALATED_ESTABLISHED
 		ip saddr ###---Your IPv4 Addr Here---### ct state established,related counter packets 0 bytes 0 accept
 		ip6 saddr ::1 ct state established,related counter packets 0 bytes 0 accept
 		ip saddr 127.0.0.1 ct state established,related counter packets 0 bytes 0 accept
