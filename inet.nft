@@ -1,0 +1,184 @@
+#!/usr/bin/nft -f
+
+nft flush ruleset
+
+table inet filter {
+	chain input {
+		type filter hook input priority filter 0;
+		ip6 saddr $myIPv6 ct state established counter accept
+		ip saddr $myIPv4 ct state established counter accept
+		ip6 saddr $lo6 ct state established counter accept
+		ip saddr $lo4 ct state established counter accept
+		iif "lo" ct state established counter accept
+		iif "lo" ip6 saddr $lo6 ct state established counter accept
+		iif "lo" ip saddr $lo4 ct state established counter accept
+		iif != "lo" ip6 saddr ::/8 counter drop
+		iif != "lo" ip saddr 127.0.0.0/8 counter drop
+		fib daddr type broadcast ct state invalid,new,untracked counter reject
+		fib daddr type multicast ct state invalid,new,untracked counter reject
+		fib daddr type anycast ct state invalid,new,untracked counter reject
+		tcp flags & rst == rst ct state invalid,new,untracked counter drop
+		icmp type echo-request ct state invalid,new,untracked counter reject 
+		icmp type address-mask-request ct state invalid,new,untracked counter reject
+		icmp type timestamp-request ct state invalid,new counter reject
+		ct state new tcp dport 113 tcp flags & (fin | syn | rst | ack) == syn counter drop
+		ip6 saddr $my6net ip6 daddr $myIPv6 ct state established counter accept
+		ip6 daddr $my6net ip6 saddr $myIPv6 ct state established counter accept
+		ip saddr $my4net ip daddr $myIPv4 ct state established counter accept
+		ip daddr $my4net ip saddr $myIPv4 ct state established counter accept
+		ip6 saddr $my6net ct state established counter accept
+		ip saddr $my4net ct state related,established counter accept
+		ip6 saddr { $lo6, $myIPv6 } tcp dport 3306 ct state established counter accept
+		ip6 saddr { $lo6, $myIPv6 } udp dport 3306 ct state established counter accept
+		ip saddr { $lo4, $myIPv4 } tcp dport 3306 ct state established counter accept
+		ip saddr { $lo4, $myIPv4 } udp dport 3306 ct state established counter accept
+		tcp dport 3306 ct state new,invalid counter drop
+		udp dport 3306 ct state new,invalid counter drop
+		tcp dport 3306 counter drop
+		udp dport 3306 counter drop
+		ip6 saddr { $lo6, $myIPv6 } tcp dport 631 ct state established counter accept
+		ip6 saddr { $lo6, $myIPv6 } udp dport 631 ct state established counter accept
+		ip saddr { $lo4, $myIPv4 } tcp dport 631 ct state established counter accept
+		ip saddr { $lo4, $myIPv4 } tcp dport 631 ct state established counter accept
+		tcp dport 631 ct state new,invalid counter drop
+		udp dport 631 ct state new,invalid counter drop
+		tcp dport 631 counter drop
+		udp dport 631 counter drop
+		ip6 saddr { $g4dns, $g6dns } ip6 daddr $myIPv6 udp dport 5353 ct state established counter accept
+		ip6 saddr { $g4dns, $g6dns } ip6 daddr $myIPv6 tcp dport 5353 ct state established counter accept
+		tcp dport $imapS ip6 daddr != { $g4dns, $g6dns } drop
+		udp dport $imapS ip6 daddr != { $g4dns, $g6dns } drop
+		tcp dport 5353 ct state invalid,new,untracked counter drop
+		udp dport 5353 ct state invalid,new,untracked counter drop
+		tcp dport 5353 counter drop
+		udp dport 5353 counter drop
+		ip saddr $g4dns ip daddr $myIPv4 udp dport 53 ct state established counter accept
+		ip saddr $g4dns ip daddr $myIPv4 tcp dport 53 ct state established counter accept
+		tcp dport $imapS ip daddr != $g4dns log prefix "SPAMALERT!" drop		
+		udp dport $imapS ip daddr != $g4dns log prefix "SPAMALERT!" drop
+		tcp dport 53 ct state invalid,new,untracked counter drop
+		udp dport 53 ct state invalid,new,untracked counter drop
+		tcp dport 53 counter drop
+		udp dport 53 counter drop
+		ip6 daddr $myIPv6 tcp dport $sqd ct state established counter accept
+		ip6 daddr $myIPv6 udp dport $sqd ct state established counter accept
+		ip daddr $myIPv4 tcp dport $sqd ct state established counter accept
+		ip daddr $myIPv4 udp dport $sqd ct state established counter accept
+		tcp dport $sqd ct state invalid,new,untracked counter drop
+		udp dport $sqd ct state invalid,new,untracked counter drop
+		tcp dport $sqd counter drop
+		udp dport $sqd counter drop
+		ip6 daddr $myIPv6 tcp dport $httpS ct state established counter accept
+		ip6 daddr $myIPv6 udp dport $httpS ct state established counter accept
+		ip daddr $myIPv4 tcp dport $httpS ct state established counter accept
+		ip daddr $myIPv4 udp dport $httpS ct state established counter accept
+		tcp dport $httpS ct state invalid,new,untracked counter drop
+		udp dport $httpS ct state invalid,new,untracked counter drop
+		tcp dport $httpS counter drop
+		udp dport $httpS counter drop
+		ip6 saddr $my6net tcp dport $Usmb ct state established counter accept
+		ip6 saddr $my6net udp dport $Usmb ct state established counter accept
+		ip saddr $my4net ip daddr $myIPv4 tcp dport $Tsmb ct state established counter accept
+		ip saddr $my4net ip daddr $myIPv4 udp dport $Usmb ct state established counter accept
+		tcp dport $Tsmb ct state invalid,new,untracked counter drop
+		udp dport $Usmb ct state invalid,new,untracked counter drop
+		tcp dport $Tsmb counter drop
+		udp dport $Usmb counter drop
+		ip6 saddr $my6net ip6 daddr $myIPv6 tcp dport $ssh ct state established counter accept
+		ip6 saddr $my6net ip6 daddr $myIPv6 udp dport $ssh ct state established counter accept
+		ip6 saddr $myIPv6 tcp dport $ssh ct state established counter accept
+		ip6 saddr $myIPv6 udp dport $ssh ct state established counter accept
+		ip saddr $my4net ip daddr $myIPv4 tcp dport $ssh ct state established counter accept
+		ip saddr $my4net ip daddr $myIPv4 udp dport $ssh ct state established counter accept
+		ip saddr $myIPv4 tcp dport $ssh ct state established counter accept
+		ip saddr $myIPv4 udp dport $ssh ct state established counter accept
+		tcp dport $ssh ct state invalid,new,untracked counter drop
+		tcp dport $ssh ct state invalid,new,untracked counter drop
+		tcp dport $ssh counter drop
+		tcp dport $ssh counter drop
+		ip6 daddr $lo6 tcp dport $wbmn ip6 saddr $lo6 ct state established counter accept
+		ip6 daddr $lo6 udp dport $wbmn ip6 saddr $lo6 ct state established counter accept
+		ip6 daddr $myIPv6 tcp dport $wbmn ip6 daddr $myIPv6 ct state established counter accept
+		ip6 daddr $myIPv6 udp dport $wbmn ip6 daddr $myIPv6 ct state established counter accept
+		ip daddr $lo4 tcp dport $wbmn ip saddr $lo4 ct state established counter accept
+		ip daddr $lo4 udp dport $wbmn ip saddr $lo4 ct state established counter accept
+		ip daddr $myIPv4 tcp dport $wbmn ip saddr $myIPv4 ct state established counter accept
+		ip daddr $myIPv4 udp dport $wbmn ip saddr $myIPv4 ct state established counter accept
+		tcp dport $wbmn ct state invalid,new,untracked counter drop
+		udp dport $wbmn ct state invalid,new,untracked counter drop
+		tcp dport $wbmn counter drop
+		udp dport $wbmn counter drop
+		ct state established counter accept
+		ct state invalid,new,untracked counter drop
+		counter drop
+		}
+
+	chain forward {
+		type filter hook forward priority 0;
+		ct state new tcp flags & (fin | syn | rst | ack) != syn counter drop
+		ct state invalid,new,untracked counter drop
+		}
+
+	chain output {
+		type filter hook output priority 0;
+		ip6 saddr $myIPv6 ct state established counter accept
+		ip saddr $myIPv4 ct state established counter accept
+		ip6 saddr $myIPv6 counter accept
+		ip saddr $myIPv4 counter accept
+		oif "lo" ip6 saddr $lo6 ct state established counter accept
+		oif "lo" ip6 saddr $lo6 counter accept
+		oif "lo" ip saddr $lo4 ct state established counter accept
+		oif "lo" ip saddr $lo4 counter accept
+		oif "lo" counter ct state established counter accept
+		oif "lo" counter accept
+		ip6 saddr $lo6 ct state established counter accept
+		ip6 saddr $lo6 counter accept
+		ip saddr $lo4 ct state established counter accept
+		ip saddr $lo4 counter accept
+		ip6 saddr $g6dns ip6 daddr $myIPv6 udp dport 5353 ct state established counter accept
+		ip6 saddr $g6dns ip6 daddr $myIPv6 tcp dport 5353 ct state established counter accept
+		ip6 saddr $g6dns ip6 daddr $myIPv6 udp dport 5353 counter accept
+		ip6 saddr $g6dns ip6 daddr $myIPv6 tcp dport 5353 counter accept
+		ip saddr $g4dns ip daddr $myIPv4 udp dport 53 ct state established counter accept
+		ip saddr $g4dns ip daddr $myIPv4 tcp dport 53 ct state established counter accept
+		ip saddr $g4dns ip daddr $myIPv4 udp dport 53 counter accept
+		ip saddr $g4dns ip daddr $myIPv4 tcp dport 53 counter accept
+		ip6 daddr { $lo6, $myIPv6 } tcp sport 3306 ct state established counter accept
+		ip6 daddr { $lo6, $myIPv6 } udp sport 3306 ct state established counter accept
+		ip daddr { $myIPv4, $lo4 } tcp sport 3306 ct state established counter accept
+		ip daddr { $myIPv4, $lo4 } udp sport 3306 ct state established counter accept
+		tcp dport 3306 ct state invalid,new,related,untracked counter drop
+		udp dport 3306 ct state invalid,new,related,untracked counter drop
+		tcp dport 3306 counter drop
+		udp dport 3306 counter drop
+		tcp dport $sqd ct state established counter accept
+		udp dport $sqd ct state established counter accept
+		tcp dport $sqd ct state invalid,untracked counter drop
+		udp dport $sqd ct state invalid,untracked counter drop
+		tcp dport $sqd counter drop
+		udp dport $sqd counter drop
+		ip6 saddr $myIPv6 tcp dport $httpS ct state established counter accept
+		ip6 saddr $myIPv6 udp dport $httpS ct state established counter accept
+		tcp dport $httpS ct state established counter accept
+		udp dport $httpS ct state established  counter accept
+		ip6 daddr $my6net udp dport $Usmb ct state established counter accept
+		ip6 daddr $my6net tcp dport $Tsmb ct state established counter accept
+		ip saddr $myIPv4 ip daddr $my4net tcp dport $Tsmb ct state established counter accept
+		ip saddr $myIPv4 ip daddr $my4net udp dport $Usmb ct state established counter accept
+		tcp dport $Tsmb ct state established counter accept
+		udp dport $Usmb ct state established counter accept
+		tcp dport $ssh ct state established counter accept
+		udp dport $ssh ct state established counter accept
+		ip6 saddr { $myIPv6, $lo6 } tcp dport $wbmn ct state established counter accept
+		ip6 saddr { $myIPv6, $lo6 } udp dport $wbmn ct state established counter accept
+		ip saddr { $myIPv4, $lo4 } tcp dport $wbmn ct state established counter accept
+		ip saddr { $myIPv4, $lo4 } udp dport $wbmn ct state established counter accept
+		tcp dport $wbmn ct state invalid,new,untracked counter drop
+		tcp dport $wbmn ct state invalid,new,untracked counter drop
+		tcp dport $wbmn counter drop
+		tcp dport $wbmn counter drop
+		ct state invalid,new,untracked counter drop
+		counter drop
+		}
+}
+
