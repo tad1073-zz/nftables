@@ -4,7 +4,7 @@ nft flush ruleset
 
 table inet filter {
 	chain input {
-		type filter hook input priority filter 0;
+		type filter hook input priority 0;
 		ip6 saddr $myIPv6 ct state established counter accept
 		ip saddr $myIPv4 ct state established counter accept
 		ip6 saddr $lo6 ct state established counter accept
