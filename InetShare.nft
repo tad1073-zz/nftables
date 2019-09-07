@@ -10,7 +10,7 @@ table inet filter {
                 ct state related,established counter accept
 	chain INPUT {
 		
-		ip6 saddr ###---Your IPv6 Addr Here---### counter goto REALATED_ESTABLISHED
+		ip6 saddr ###---Your IPv6 Addr Here---### counter goto REAL_EST
 		ip saddr ###---Your IPv4 Addr Here---### ct state established,related counter packets 0 bytes 0 accept
 		ip6 saddr ::1 ct state established,related counter packets 0 bytes 0 accept
 		ip saddr 127.0.0.1 ct state established,related counter packets 0 bytes 0 accept
