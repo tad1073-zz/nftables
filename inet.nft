@@ -4,9 +4,9 @@
 define mynic = removed for security purposes
 define myvln = removed for security purposes
 define routerv4 = removed for security purposes
-define rllgav6 = removed for security purposes
-define rgga = removed for security purposes
-define delpre = removed for security purposes
+define rllgav6 = removed for security purposes	# Router Link Local Gateway Address
+define rgga = removed for security purposes	# Router Global Gateway Address
+define delpre = removed for security purposes	# Delegated Prefix ???Subnet???
 define lo4 = 127.0.0.1
 define lo6 = ::1
 define blov4 = 127.0.0.0/8
@@ -31,15 +31,15 @@ define block = {
 	37.189.0.0/17,
 	64.30.224.0/20
 	}
-define stupid_tv = removed for security purposes
+define stupid_tv = removed for security purposes #iptv kept thinking I was a router
 # define g4dns = {8.8.8.8, 8.8.4.4}
 define g6dns = 	{2001:4860:4860::8888, 2001:4860:4860::8844}
 define ssh = removed for security purposes
 define mysql = removed for security purposes
 define squid = removed for security purposes
 define wbmn = removed for security purposes
-define httpS = removed for security purposes
-define imapS = removed for security purposes
+define httpS = removed for security purposes # http and https addrs
+define imapS = removed for security purposes # imap and imaps addrs
 define Tsmb = removed for security purposes # Samba over TCP{ (T)CPsmb) }
 define Usmb = removed for security purposes # Samba over UDP { (U)DPsmb) }
 ###### Defines ######
