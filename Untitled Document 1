@@ -1,0 +1,248 @@
+
+
+table ip mangle {
+	chain prerouting {
+		type filter hook prerouting priority -150;
+		ip saddr $block4 counter drop
+		ip daddr $block4 counter drop
+		ip saddr 224.0.0.0/3 counter drop
+		ip saddr 169.254.0.0/16 counter drop
+		ip saddr 172.16.0.0/12 counter drop
+		ip saddr 192.0.2.0/24 counter drop
+		ip saddr 192.168.0.0/16 counter drop
+		ip saddr 240.0.0.0/5 counter drop
+		icmp type echo-request counter drop
+		icmp type address-mask-request counter drop
+		icmp type timestamp-request counter drop
+		fib daddr type broadcast counter drop
+		fib daddr type multicast counter drop
+		fib daddr type anycast counter drop
+		}
+
+	chain postrouting {
+		type filter hook postrouting priority -150;
+		}
+}
+
+table ip6 mangle {
+	chain prerouting {
+		type route hook output priority -150;
+		ip6 saddr $block6 counter drop
+		ip6 daddr $block6 counter drop
+		}
+
+	chain postrouting {
+		type route hook output priority -150;
+		}
+}
+
+table nat {
+	chain prerouting {
+		type nat hook prerouting priority -100; 
+		iif $enp0 tcp dport { http, https } dnat to $myIPv4
+		iif $enp0 tcp dport { http, https } redirect to :$squid
+		iif $enp0 udp dport { http, https } dnat to $myIPv4
+		iif $enp0 udp dport { http, https } redirect to :$squid
+		}
+
+	chain input { type nat hook input priority -100; }
+	chain output { type nat hook output priority -100; }
+
+	chain postrouting {
+		type nat hook postrouting priority -100; 
+		oif $enp0 masquerade
+		oif $enp0 tcp dport { http, https } snat to $gtwy4
+		oif $enp0 udp dport { http, https } snat to $gtwy4
+		}
+}
+
+table ip6 nat {
+	chain prerouting {
+		type nat hook prerouting priority -100; counter accept
+		iif $enp0 tcp dport { http, https } dnat to $myIPv6
+		iif $enp0 tcp dport { http, https } redirect to :$squid
+		iif $enp0 udp dport { http, https } dnat to $myIPv6
+		iif $enp0 udp dport { http, https } redirect to :$squid    
+		}
+
+	chain input { type nat hook input priority 100; }
+	chain output { type nat hook output priority -100; }
+
+	chain postrouting {
+		type nat hook postrouting priority 100;
+		oif $enp0 masquerade
+		oif $enp0 tcp dport { http, https } snat to $gtwy6
+		oif $enp0 udp dport { http, https } snat to $gtwy6
+		}
+}
+
+table inet filter {
+	chain input {
+		type filter hook input priority 0;
+		meta iif {lo, $enp0} ct direction original counter accept
+		meta iif {lo, $enp0} ct state established counter accept		
+		meta iif {lo, $enp0} ct status confirmed counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct direction original counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct state established counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct status confirmed counter accept
+		ip saddr $myIPv4 ct direction original counter accept
+		ip saddr $myIPv4 ct state established counter accept
+		ip saddr $myIPv4 ct status confirmed counter accept
+		ip6 saddr $lo6 ct direction original counter accept
+		ip6 saddr $lo6 ct state established counter accept
+		ip6 saddr $lo6 ct status confirmed counter accept
+		ip saddr $lo4 ct direction original counter accept
+		ip saddr $lo4 ct state established counter accept
+		ip saddr $lo4 ct status confirmed counter accept
+		iif "lo" ip6 saddr $lo6 ct direction original counter accept
+		iif "lo" ip6 saddr $lo6 ct state established counter accept
+		iif "lo" ip6 saddr $lo6 ct status confirmed counter accept
+		iif "lo" ip saddr $lo4 ct direction original counter accept
+		iif "lo" ip saddr $lo4 ct state established counter accept
+		iif "lo" ip saddr $lo4 ct status confirmed counter accept
+		iif "lo" ct direction original counter accept
+		iif "lo" ct state established counter accept
+		iif "lo" ct status confirmed counter accept
+		iif != "lo" ip6 saddr $blov6 counter goto nft_log
+		iif != "lo" ip saddr $blov4 counter goto nft_log
+		ip6 saddr $g6dns ip6 daddr { $myIPv6, $myIPv6.1 } ct direction original counter accept
+		ip6 saddr $g6dns ip6 daddr { $myIPv6, $myIPv6.1 } ct state established counter accept
+		ip6 saddr $g6dns ip6 daddr { $myIPv6, $myIPv6.1 } ct status confirmed counter accept
+		ip saddr $g4dns ip daddr $myIPv4 ct direction original counter accept
+		ip saddr $g4dns ip daddr $myIPv4 ct state established counter accept
+		ip saddr $g4dns ip daddr $myIPv4 ct status confirmed counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport { http, https, $squid } ct direction original counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport { http, https, $squid } ct state established counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport { http, https, $squid } ct status confirmed counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport { http, https, $squid } ct direction original counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport { http, https, $squid } ct state established counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport { http, https, $squid } ct status confirmed counter accept
+		ip daddr $myIPv4 tcp dport { http, https, $squid } ct direction original counter accept
+		ip daddr $myIPv4 udp dport { http, https, $squid } ct state established counter accept
+		ip daddr $myIPv4 tcp dport { http, https, $squid } ct status confirmed counter accept
+		ip daddr $myIPv4 udp dport { http, https, $squid } ct direction original counter accept
+		ip daddr $myIPv4 tcp dport { http, https, $squid } ct state established counter accept
+		ip daddr $myIPv4 udp dport { http, https, $squid } ct status confirmed counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport $imaps ct direction original counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport $imaps ct state established counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport $imaps ct status confirmed counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport $imaps ct direction original counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport $imaps ct state established counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport $imaps ct status confirmed counter accept
+		ip daddr $myIPv4 tcp dport $imaps ct direction original counter accept
+		ip daddr $myIPv4 udp dport $imaps ct state established counter accept
+		ip daddr $myIPv4 tcp dport $imaps ct status confirmed counter accept
+		ip daddr $myIPv4 udp dport $imaps ct direction original counter accept
+		ip daddr $myIPv4 tcp dport $imaps ct state established counter accept
+		ip daddr $myIPv4 udp dport $imaps ct status confirmed counter accept			
+		tcp dport { http, https, $squid } ct direction original counter accept
+		udp dport { http, https, $squid } ct state established counter accept
+	  	tcp dport { http, https, $squid } ct status confirmed counter accept
+		udp dport { http, https, $squid } ct direction original counter accept
+		tcp dport { http, https, $squid } ct state established counter accept
+		udp dport { http, https, $squid } ct status confirmed counter accept
+		ip6 saddr $my6net ip6 daddr { $myIPv6, $myIPv6.1 } ct direction original counter accept
+		ip6 daddr $my6net ip6 saddr { $myIPv6, $myIPv6.1 } ct state established counter accept
+		ip6 daddr $my6net ip6 saddr { $myIPv6, $myIPv6.1 } ct status confirmed counter accept
+		ip saddr $my4net ip daddr $myIPv4 ct direction original counter accept
+		ip daddr $my4net ip saddr $myIPv4 ct state established counter accept
+		ip daddr $my4net ip saddr $myIPv4 ct status confirmed counter accept
+		ip6 daddr $my6net ct direction original counter accept
+		ip6 daddr $my6net ct state established counter accept
+		ip6 daddr $my6net ct status confirmed counter accept
+		ip saddr $my4net ct direction original counter accept
+		ip saddr $my4net ct state established counter accept
+		ip saddr $my4net ct status confirmed counter accept
+		ip6 saddr $my6net tcp dport $Usmb ct state established,related counter accept
+		ip6 saddr $my6net udp dport $Usmb ct state established,related counter accept
+		ip saddr $my4net ip daddr $myIPv4 tcp dport $Tsmb ct state established,related counter accept
+		ip saddr $my4net ip daddr $myIPv4 udp dport $Usmb ct state established,related counter accept
+		ip6 saddr $my6net ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport $ssh ct state established,related counter accept
+		ip6 saddr $my6net ip6 daddr { $myIPv6, $myIPv6.1 } udp dport $ssh ct state established,related counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } tcp dport $ssh ct state established,related counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } udp dport $ssh ct state established,related counter accept
+		ip saddr $my4net ip daddr $myIPv4 tcp dport $ssh ct state established,related counter accept
+		ip saddr $my4net ip daddr $myIPv4 udp dport $ssh ct state established,related counter accept
+		ip saddr $myIPv4 tcp dport $ssh ct state established,related counter accept
+		ip saddr $myIPv4 udp dport $ssh ct state established,related counter accept
+		tcp dport $ssh ct state invalid counter goto nft_log
+		udp dport $ssh ct state invalid counter goto nft_log
+		ip6 daddr $lo6 tcp dport $wbmn ip6 saddr $lo6 ct state established,related counter accept
+		ip6 daddr $lo6 udp dport $wbmn ip6 saddr $lo6 ct state established,related counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } tcp dport $wbmn ip6 daddr { $myIPv6, $myIPv6.1 } ct state established,related counter accept
+		ip6 daddr { $myIPv6, $myIPv6.1 } udp dport $wbmn ip6 daddr { $myIPv6, $myIPv6.1 } ct state established,related counter accept
+		ip daddr $lo4 tcp dport $wbmn ip saddr $lo4 ct state established,related counter accept
+		ip daddr $lo4 udp dport $wbmn ip saddr $lo4 ct state established,related counter accept
+		ip daddr $myIPv4 tcp dport $wbmn ip saddr $myIPv4 ct state established,related counter accept
+		ip daddr $myIPv4 udp dport $wbmn ip saddr $myIPv4 ct state established,related counter accept
+		tcp dport $wbmn ct state invalid counter goto nft_log
+		udp dport $wbmn ct state invalid counter goto nft_log
+		ct state invalid counter goto nft_log
+		ct direction original counter accept
+		ct state established counter accept		
+		ct status confirmed counter accept
+		}
+
+  chain forward {
+    type filter hook forward priority 0;
+#		iif $enp0 counter accept
+		counter drop
+		}
+
+	chain output {
+		type filter hook output priority 0;
+		meta oif {lo, $enp0} ct direction original counter accept
+		meta oif {lo, $enp0} ct state established counter accept		
+		meta oif {lo, $enp0} ct status confirmed counter accept		
+		ip6 daddr $g6dns ip6 saddr { $myIPv6, $myIPv6.1 } ct direction original counter accept
+		ip6 daddr $g6dns ip6 saddr { $myIPv6, $myIPv6.1 } ct state established counter accept
+		ip6 daddr $g6dns ip6 saddr { $myIPv6, $myIPv6.1 } ct status confirmed counter accept
+		ip daddr $g4dns ip saddr $myIPv4 ct direction original counter accept
+		ip daddr $g4dns ip saddr $myIPv4 ct state established counter accept
+		ip daddr $g4dns ip saddr $myIPv4 ct status confirmed counter accept
+		ip saddr $myIPv4 ct direction original counter accept
+		ip saddr $myIPv4 ct state established counter accept
+		ip saddr $myIPv4 ct status confirmed counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct direction original counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct state established counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } ct status confirmed counter accept
+		oif "lo" ip6 saddr $lo6 ct state established counter accept
+		oif "lo" ip saddr $lo4 ct state established counter accept
+		oif "lo" ct state established counter accept
+		ip6 saddr $lo6 ct state established counter accept
+		ip saddr $lo4 ct state established counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } tcp dport { http, https, $squid } ct direction original counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } udp dport { http, https, $squid } ct status confirmed counter accept		
+		ip saddr $myIPv4 tcp dport { http, https, $squid } ct direction original counter accept
+		ip saddr $myIPv4 udp dport { http, https, $squid } ct status confirmed counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } tcp dport $imaps ct direction original counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1 } udp dport $imaps ct status confirmed counter accept		
+		ip saddr $myIPv4 tcp dport $imaps ct direction original counter accept
+		ip saddr $myIPv4 udp dport $imaps ct status confirmed counter accept					
+		tcp dport { http, https, $squid } ct state established counter accept
+		udp dport { http, https, $squid } ct state established counter accept
+		tcp dport $squid ct state established,related counter accept
+		udp dport $squid ct state established,related counter accept
+		ip6 daddr $my6net udp dport $Usmb ct state established,related counter accept
+		ip6 daddr $my6net tcp dport $Tsmb ct state established,related counter accept
+		ip saddr $myIPv4 ip daddr $my4net tcp dport $Tsmb ct state established,related counter accept
+		ip saddr $myIPv4 ip daddr $my4net udp dport $Usmb ct state established,related counter accept
+		tcp dport $Tsmb ct state established,related counter accept
+		udp dport $Usmb ct state established,related counter accept
+		tcp dport $ssh ct state established,related counter accept
+		udp dport $ssh ct state established,related counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1, $lo6 } tcp dport $wbmn ct state established,related counter accept
+		ip6 saddr { $myIPv6, $myIPv6.1, $lo6 } udp dport $wbmn ct state established,related counter accept
+		ip saddr { $myIPv4, $lo4 } tcp dport $wbmn ct state established,related counter accept
+		ip saddr { $myIPv4, $lo4 } udp dport $wbmn ct state established,related counter accept
+		ct state invalid drop
+		counter accept
+		}
+
+	chain nft_log {
+	    log level warn log prefix "NFT_LOG: " counter accept
+	    counter drop
+	    }
+}
+
+
