@@ -1,0 +1,165 @@
+table inet filter {
+	chain global_in {
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		meta protocol { ip, ip6 } counter accept
+		ct state { invalid, untracked } counter jump global_drop
+		}
+
+	chain global_out {
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		meta protocol { ip, ip6 } counter accept
+		ct state { invalid, untracked } counter jump global_drop
+		counter accept
+		}
+
+	chain global_drop {
+		log level notice log prefix "NFT_DROP: "
+		ct state { new, invalid, untracked } counter drop	
+		counter drop
+		}
+
+	chain input {
+		type filter hook input priority 0; policy drop;
+		# NOT LO
+		iif != "lo" ip6 saddr $blov6 jump global_drop
+		iif != "lo" ip saddr $blov4 jump global_drop
+		ct state new tcp flags & (fin | syn | rst | ack) != syn jump global_drop
+		jump global_in
+		
+		# Self
+		iif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 }ip saddr { $myIPv4, $myWLPv4 } jump global_in
+		
+		# Lo
+		iif "lo" ip6 saddr $lo6 ip6 daddr $lo6 jump global_in
+		iif "lo" ip saddr $lo4 ip daddr $lo4 jump global_in
+		ip6 saddr $lo6 ip6 daddr $lo6 jump global_in
+		ip saddr $lo4 ip daddr $lo4 jump global_in
+		iif "lo" jump global_in
+		
+		# DNS
+		iif { $enp0, $wlp0 } ip6 saddr $g6dns ip6 daddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip saddr $g4dns ip daddr { $myIPv4, $myWLPv4 } jump global_in
+		iif { $enp0, $wlp0 } ip6 saddr $o6dns ip6 daddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip saddr $o4dns ip daddr { $myIPv4, $myWLPv4 } jump global_in
+		
+		#ICMP
+		iif { $enp0, $wlp0 } ip protocol icmp icmp type echo-request limit rate 1/second jump global_in
+		iif { $enp0, $wlp0 } ip protocol icmp icmp type { destination-unreachable, source-quench, time-exceeded, parameter-problem, router-solicitation} jump global_in
+#		iif { $enp0, $wlp0 } ip6 protocol ipv6-icmp icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert, parameter-problem } counter accept
+		iif { $enp0, $wlp0 } ip protocol icmp jump global_drop
+		
+		# HTTP, HTTPS, SQUID
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } tcp dport { http, https, 3128 } jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } udp dport { http, https, 3128 } jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } tcp dport { http, https, 3128 } jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } udp dport { http, https, 3128 } jump global_in
+		iif { $enp0, $wlp0 } tcp dport { http, https, 3128 } jump global_in
+		iif { $enp0, $wlp0 } udp dport { http, https, 3128 } jump global_in
+		
+		# IMAPS
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } tcp dport $imaps jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } udp dport $imaps jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } tcp dport $imaps jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } udp dport $imaps jump global_in
+		iif { $enp0, $wlp0 } tcp dport $imaps jump global_in
+		iif { $enp0, $wlp0 } udp dport $imaps jump global_in
+		
+		# LOCAL SUBNET
+		iif { $enp0, $wlp0 } ip6 saddr $my6net ip6 daddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip saddr $my4net ip daddr { $myIPv4, $myWLPv4 } jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr $my6net ip6 saddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip daddr $my4net ip saddr { $myIPv4, $myWLPv4 } jump global_in
+		
+		# SAMBA
+		iif { $enp0, $wlp0 } ip6 saddr $my6net tcp dport $Tsmb jump global_in
+		iif { $enp0, $wlp0 } ip6 saddr $my6net udp dport $Usmb jump global_in
+		iif { $enp0, $wlp0 } ip saddr $my4net ip daddr { $myIPv4, $myWLPv4 } tcp dport $Tsmb jump global_in
+		iif { $enp0, $wlp0 } ip saddr $my4net ip daddr { $myIPv4, $myWLPv4 } udp dport $Usmb jump global_in
+		iif { $enp0, $wlp0 } ip6 saddr $my6net ip6 daddr { $myIPv6, $myWLPv6 } tcp dport $ssh jump global_in
+		iif { $enp0, $wlp0 } ip6 saddr $my6net ip6 daddr { $myIPv6, $myWLPv6 } udp dport $ssh jump global_in
+		
+		# SSH
+		iif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } tcp dport $ssh jump global_in
+		iif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } udp dport $ssh jump global_in
+		iif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } tcp dport $ssh jump global_in
+		iif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } tcp dport $ssh jump global_in
+		
+		# WEBMIN AND VIRTUALMIN
+		iif { $enp0, $wlp0 } ip6 daddr $lo6 tcp dport { $wbmn, $virtmn } ip6 saddr $lo6 jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr $lo6 udp dport { $wbmn, $virtmn } ip6 saddr $lo6 jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } tcp dport { $wbmn, $virtmn } ip6 daddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip6 daddr { $myIPv6, $myWLPv6 } udp dport { $wbmn, $virtmn } ip6 daddr { $myIPv6, $myWLPv6 } jump global_in
+		iif { $enp0, $wlp0 } ip daddr $lo4 tcp dport { $wbmn, $virtmn } ip saddr $lo4 jump global_in
+		iif { $enp0, $wlp0 } ip daddr $lo4 udp dport { $wbmn, $virtmn } ip saddr $lo4 jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } tcp dport { $wbmn, $virtmn } ip saddr { $myIPv4, $myWLPv4 } jump global_in
+		iif { $enp0, $wlp0 } ip daddr { $myIPv4, $myWLPv4 } udp dport { $wbmn, $virtmn } ip saddr { $myIPv4, $myWLPv4 } jump global_in
+		}
+
+	chain forward {
+		type filter hook forward priority 0; policy drop;
+		ip saddr $myIPv4 tcp dport 3128 accept
+		ip saddr $myIPv4 udp dport 3128 accept
+		ip6 saddr $myIPv6 tcp dport 3128 accept
+		ip6 saddr $myIPv6 udp dport 3128 accept
+		drop
+		}
+
+	chain output {
+		type filter hook output priority 0; policy drop;
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } jump global_out
+		
+		# LO
+		oif "lo" ip6 saddr $lo6 ip6 daddr $lo6 jump global_out
+		oif "lo" ip saddr $lo4 ip daddr $lo4 jump global_out
+		oif "lo" jump global_out
+		
+		# DNS
+		oif { $enp0, $wlp0 } ip6 daddr $g6dns ip6 saddr { $myIPv6, $myWLPv6 } jump global_out
+		oif { $enp0, $wlp0 } ip daddr $g4dns ip saddr { $myIPv4, $myWLPv4 } jump global_out
+		oif { $enp0, $wlp0 } ip6 daddr $o6dns ip6 saddr { $myIPv6, $myWLPv6 } jump global_out
+		oif { $enp0, $wlp0 } ip daddr $o4dns ip saddr { $myIPv4, $myWLPv4 } jump global_out
+		
+		#ICMP
+		oif { $enp0, $wlp0 } ip protocol icmp icmp type echo-request limit rate 1/second jump global_out
+		oif { $enp0, $wlp0 } ip protocol icmp icmp type { destination-unreachable, source-quench, time-exceeded, parameter-problem, router-solicitation} jump global_out
+#		oif { $enp0, $wlp0 } ip6 protocol ipv6-icmp icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert, parameter-problem } counter accept
+		oif { $enp0, $wlp0 } ip protocol icmp jump global_drop
+		
+		# HTTP, HTTPS, SQUID
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } tcp sport { http, https, 3128 } jump global_out
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } udp sport { http, https, 3128 } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } tcp sport { http, https, 3128 } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } udp sport { http, https, 3128 } jump global_out
+		
+		# IMAPS
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } tcp sport $imaps jump global_out
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } udp sport $imaps jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } tcp sport $imaps jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } udp sport $imaps jump global_out
+		
+		# SAMBA
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } ip6 daddr $my6net tcp dport $Tsmb jump global_out
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } ip6 daddr $my6net udp dport $Usmb jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } ip daddr $my4net tcp dport $Tsmb jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } ip daddr $my4net udp dport $Usmb jump global_out
+		
+		# SSH
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } tcp dport { 22, $ssh } jump global_out
+		oif { $enp0, $wlp0 } ip6 saddr { $myIPv6, $myWLPv6 } udp dport { 22, $ssh } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } tcp dport { 22, $ssh } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { $myIPv4, $myWLPv4 } udp dport { 22, $ssh } jump global_out
+		
+		# WEBMIN, VIRTUALMIN
+		oif { $enp0, $wlp0 } ip6 saddr { { $myIPv6, $myWLPv6 }, $lo6 } tcp dport { $wbmn, $virtmn } jump global_out
+		oif { $enp0, $wlp0 } ip6 saddr { { $myIPv6, $myWLPv6 }, $lo6 } udp dport { $wbmn, $virtmn } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { { $myIPv4, $myWLPv4 }, $lo4 } tcp dport { $wbmn, $virtmn } jump global_out
+		oif { $enp0, $wlp0 } ip saddr { { $myIPv4, $myWLPv4 }, $lo4 } udp dport { $wbmn, $virtmn } jump global_out
+		}
+}
+

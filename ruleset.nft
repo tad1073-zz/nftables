@@ -1,0 +1,33 @@
+#!/usr/bin/nft -f
+
+include "./defines.nft"
+
+flush ruleset
+
+table inet filter {
+	chain global_in {
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		ct state { invalid, untracked } jump global_drop
+		}
+		
+	chain global_out {
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		ct state { new, invalid, untracked } jump global_drop
+		counter accept
+		}
+		
+	chain global_drop {
+		log level notice log prefix "NFT_DROP: "
+		ct state { invalid, untracked } counter drop	
+		}
+		
+		include "./mangle.nft"
+		include "./nat4.nft"
+		include "./nat6.nft"
+		include "./inet.nft"
+		
+}

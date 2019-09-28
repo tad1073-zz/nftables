@@ -1,0 +1,29 @@
+#!/usr/bin/nft -f
+
+table ip mangle {
+	chain prerouting {
+		type filter hook prerouting priority -150;
+		ip saddr $block4 drop
+		icmp type { redirect, echo-request, timestamp-request, timestamp-reply, info-request, info-reply, router-advertisement } counter packets 0 bytes 0 drop
+		fib daddr type broadcast counter packets 0 bytes 0 drop
+		fib daddr type multicast counter packets 0 bytes 0 drop
+		fib daddr type anycast counter packets 0 bytes 0 drop
+		}
+	
+	chain postrouting {
+		type filter hook postrouting priority -150;
+		accept
+		}
+}
+
+table ip6 manble {
+	chain prerouting {
+	type filter hook prerouting priority -150;
+		ip saddr $block6 drop
+		}
+		
+	chain postrouting {
+		type filter hook postrouting priority -150;
+		accept
+		}
+}

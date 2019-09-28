@@ -1,0 +1,47 @@
+#!/usr/bin/nft -f
+
+table ip nat {
+	chain prerouting {
+	type nat hook prerouting priority -100;
+	ip saddr $myIPv4 tcp dport { http, https } dnat to :3128
+	ip saddr $myIPv4 tcp dport { http, https } redirect to :3128
+	ip saddr $myIPv4 udp dport { http, https } dnat to :3128
+	ip saddr $myIPv4 udp dport { http, https } redirect to :3128
+	counter accept
+	}
+	
+	chain input { type nat hook input priority -100; }
+	chain output { type nat hook output priority -100; }
+	
+	chain postrouting {
+	type nat hook postrouting priority -100; 
+	ip saddr $myIPv4 masquerade
+	ip saddr $gtwy4 counter accept
+	ip saddr $myIPv4 tcp dport { http, https } snat to $gtwy4
+	ip saddr $myIPv4 udp dport { http, https } snat to $gtwy4
+	counter accept
+	}
+}
+
+table ip6 nat {
+	chain prerouting {
+	type nat hook prerouting priority -100; counter accept
+	ip6 saddr $myIPv6 tcp dport { http, https } dnat to :3128
+	ip6 saddr $myIPv6 tcp dport { http, https } redirect to :3128
+	ip6 saddr $myIPv6 udp dport { http, https } dnat to :3128
+	ip6 saddr $myIPv6 udp dport { http, https } redirect to :3128
+	counter accept
+	}
+
+	chain input { type nat hook input priority 100; }
+	chain output { type nat hook output priority -100; }
+	
+	chain postrouting {
+	type nat hook postrouting priority 100;
+	ip6 saddr $myIPv6 masquerade
+	ip6 saddr $gtwy6 counter accept
+	ip6 saddr $myIPv6 tcp dport { http, https } snat to $gtwy6
+	ip6 saddr $myIPv6 udp dport { http, https } snat to $gtwy6
+	counter accept
+	}
+}
