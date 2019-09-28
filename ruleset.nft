@@ -26,8 +26,7 @@ table inet filter {
 		}
 		
 		include "./mangle.nft"
-		include "./nat4.nft"
-		include "./nat6.nft"
+		include "./nat.nft"
 		include "./inet.nft"
 		
 }
