@@ -1,5 +1,6 @@
 # Translated by iptables-restore-translate v1.8.2 on Sat Aug 31 06:19:33 2019
 
+####----Inet Raw Tables, Chains and Rules----####
 add table inet raw
 add chain inet raw PREROUTING { type filter hook prerouting priority -300; }
 add rule inet raw PREROUTING counter jump PREROUTING_direct
@@ -24,10 +25,7 @@ add chain inet raw OUTPUT { type filter hook output priority -300; }
 add rule inet raw OUTPUT counter jump OUTPUT_direct
 add chain inet raw OUTPUT_direct
 
-
-
-
-
+####----Inet Mangle Tables, Chains and Rules----####
 add table inet mangle
 add chain inet mangle PREROUTING { type filter hook prerouting priority -150; }
 add rule inet mangle PREROUTING counter jump PREROUTING_direct
@@ -68,11 +66,7 @@ add chain inet mangle POSTROUTING { type filter hook postrouting priority -150; 
 add rule inet mangle POSTROUTING counter jump POSTROUTING_direct
 add chain inet mangle POSTROUTING_direct
 
-
-
-
-
-
+####----Inet Nat Tables, Chains and Rules----####
 add table inet nat
 add chain inet nat PREROUTING { type nat hook prerouting priority -100; policy accept; }
 add rule inet nat PREROUTING counter jump PREROUTING_direct
@@ -118,25 +112,9 @@ add chain inet nat OUTPUT { type nat hook output priority -100; policy accept; }
 add rule inet nat OUTPUT counter jump OUTPUT_direct
 add chain inet nat OUTPUT_direct
 
-
-
-
-
-
-
-
-
+####----Inet Filter Tables, Chains and Rules----####
 add table inet filter
 add chain inet filter INPUT { type filter hook input priority 0; policy accept; }
-add rule inet filter INPUT ip6 saddr $myIPv6 ct state established counter accept
-add rule inet filter INPUT ip saddr $myIPv4 ct state established counter accept
-add rule inet filter INPUT ip6 saddr $lo6 ct state established counter accept
-add rule inet filter INPUT ip saddr $lo4 ct state established counter accept
-add rule inet filter INPUT iif "lo" ct state established counter accept
-add rule inet filter INPUT iif "lo" ip6 saddr $lo6 ct state established counter accept
-add rule inet filter INPUT iif "lo" ip saddr $lo4 ct state established counter accept
-add rule inet filter INPUT ct state related,established counter accept
-add rule inet filter INPUT iif "lo" counter accept
 add rule inet filter INPUT counter jump INPUT_direct
 add rule inet filter INPUT counter jump INPUT_ZONES_SOURCE
 add rule inet filter INPUT counter jump INPUT_ZONES
@@ -150,9 +128,9 @@ add rule inet filter IN_FedoraWorkstation counter jump IN_FedoraWorkstation_allo
 add rule inet filter IN_FedoraWorkstation inet protocol icmp counter accept
 
 add chain inet filter IN_FedoraWorkstation_allow
-add rule inet filter IN_FedoraWorkstation_allow tcp dport 22 ct state established counter accept
-add rule inet filter IN_FedoraWorkstation_allow udp dport 137 ct state established counter accept
-add rule inet filter IN_FedoraWorkstation_allow udp dport 138 ct state established counter accept
+add rule inet filter IN_FedoraWorkstation_allow
+add rule inet filter IN_FedoraWorkstation_allow
+add rule inet filter IN_FedoraWorkstation_allow
 add chain inet filter IN_FedoraWorkstation_deny
 add chain inet filter IN_FedoraWorkstation_log
 
@@ -169,8 +147,7 @@ add rule inet filter FORWARD counter jump FORWARD_IN_ZONES_SOURCE
 add rule inet filter FORWARD counter jump FORWARD_IN_ZONES
 add rule inet filter FORWARD counter jump FORWARD_OUT_ZONES_SOURCE
 add rule inet filter FORWARD counter jump FORWARD_OUT_ZONES
-add rule inet filter FORWARD ct state new,invalid counter drop
-add rule inet filter FORWARD counter reject with icmp type host-prohibited
+add rule inet filter FORWARD
 
 add chain inet filter FORWARD_IN_ZONES
 add rule inet filter FORWARD_IN_ZONES counter goto FWDI_FedoraWorkstation
@@ -180,7 +157,7 @@ add chain inet filter FWDI_FedoraWorkstation
 add rule inet filter FWDI_FedoraWorkstation counter jump FWDI_FedoraWorkstation_log
 add rule inet filter FWDI_FedoraWorkstation counter jump FWDI_FedoraWorkstation_deny
 add rule inet filter FWDI_FedoraWorkstation counter jump FWDI_FedoraWorkstation_allow
-add rule inet filter FWDI_FedoraWorkstation inet protocol icmp counter accept
+add rule inet filter FWDI_FedoraWorkstation
 
 add chain inet filter FWDI_FedoraWorkstation_allow
 add chain inet filter FWDI_FedoraWorkstation_deny
@@ -205,10 +182,7 @@ add rule inet filter OUTPUT oif "lo" counter accept
 add rule inet filter OUTPUT counter jump OUTPUT_direct
 add chain inet filter OUTPUT_direct
 
-
-
-
-
+####----Inet Security Table, Chains and Rules----####
 add table inet security
 add chain inet security INPUT { type filter hook input priority 0; policy accept; }
 add rule inet security INPUT counter jump INPUT_direct
