@@ -1,0 +1,302 @@
+# Translated by iptables-restore-translate v1.8.2 on Sat Aug 31 06:19:33 2019
+
+####----IPv4 Raw Tables, Chains and Rules----####
+add table ip raw
+add chain ip raw PREROUTING { type filter hook prerouting priority -300; }
+add chain ip raw PREROUTING_direct
+add chain ip raw PREROUTING_ZONES
+add chain ip raw PREROUTING_ZONES_SOURCE
+add chain ip raw PRE_Workstation
+add chain ip raw PRE_Workstation_allow
+add chain ip raw PRE_Workstation_deny
+add chain ip raw PRE_Workstation_log
+add chain ip raw OUTPUT { type filter hook output priority -300; }
+add chain ip raw OUTPUT_direct
+
+add rule ip raw PREROUTING counter jump PREROUTING_direct
+add rule ip raw PREROUTING counter jump PREROUTING_ZONES
+add rule ip raw PREROUTING counter jump PREROUTING_ZONES_SOURCE
+add rule ip raw PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip raw PRE_Workstation counter jump PRE_Workstation_log
+add rule ip raw PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip raw PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip raw OUTPUT counter jump OUTPUT_direct
+
+####----IPv6 Raw Tables, Chains and Rules----####
+add table ip6 raw
+add chain ip6 raw PREROUTING { type filter hook prerouting priority -300; }
+add chain ip6 raw PREROUTING_direct
+add chain ip6 raw PREROUTING_ZONES
+add chain ip6 raw PREROUTING_ZONES_SOURCE
+add chain ip6 raw PRE_Workstation
+add chain ip6 raw PRE_Workstation_allow
+add chain ip6 raw PRE_Workstation_deny
+add chain ip6 raw PRE_Workstation_log
+add chain ip6 raw OUTPUT { type filter hook output priority -300; }
+add chain ip6 raw OUTPUT_direct
+
+add rule ip6 raw PREROUTING counter jump PREROUTING_direct
+add rule ip6 raw PREROUTING counter jump PREROUTING_ZONES
+add rule ip6 raw PREROUTING counter jump PREROUTING_ZONES_SOURCE
+add rule ip6 raw PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip6 raw PRE_Workstation counter jump PRE_Workstation_log
+add rule ip6 raw PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip6 raw PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip6 raw OUTPUT counter jump OUTPUT_direct
+
+####----IPv4 Mangle Tables, Chains and Rules----####
+add table ip mangle
+add chain ip mangle PREROUTING { type filter hook prerouting priority -150; }
+add chain ip mangle PREROUTING_direct
+add chain ip mangle PREROUTING_ZONES
+add chain ip mangle PREROUTING_ZONES_SOURCE
+add chain ip mangle PRE_Workstation
+add chain ip mangle PRE_Workstation_allow
+add chain ip mangle PRE_Workstation_deny
+add chain ip mangle PRE_Workstation_log
+add chain ip mangle INPUT { type filter hook input priority -150; }
+add chain ip mangle INPUT_direct
+add chain ip mangle FORWARD { type filter hook forward priority -150; policy accept; }
+add chain ip mangle FORWARD_direct
+add chain ip mangle OUTPUT { type route hook output priority -150; policy accept; }
+add chain ip mangle OUTPUT_direct
+add chain ip mangle POSTROUTING { type filter hook postrouting priority -150; policy accept; }
+add chain ip mangle POSTROUTING_direct
+
+add rule ip mangle PREROUTING counter jump PREROUTING_direct
+add rule ip mangle PREROUTING counter jump PREROUTING_ZONES
+add rule ip mangle PREROUTING counter jump PREROUTING_ZONES_SOURCE
+add rule ip mangle PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip mangle PRE_Workstation counter jump PRE_Workstation_log
+add rule ip mangle PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip mangle PRE_Workstation iif != "lo" ip6 saddr $blov6 counter drop
+add rule ip mangle PRE_Workstation iif != "lo" ip saddr $blov4 counter drop
+add rule ip mangle PRE_Workstation tcp dport $imapS ip6 daddr != $g6dns counter drop
+add rule ip mangle PRE_Workstation udp dport $imapS ip6 daddr != $g6dns counter drop
+add rule ip mangle PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip mangle INPUT counter jump INPUT_direct
+
+add rule ip mangle FORWARD counter jump FORWARD_direct
+
+add rule ip mangle OUTPUT counter jump OUTPUT_direct
+
+add rule ip mangle POSTROUTING counter jump POSTROUTING_direct
+
+####----IPv6 Mangle Tables, Chains and Rules----####
+add table ip6 mangle
+add chain ip6 mangle PREROUTING { type filter hook prerouting priority -150; }
+add chain ip6 mangle PREROUTING_direct
+add chain ip6 mangle PREROUTING_ZONES
+add chain ip6 mangle PREROUTING_ZONES_SOURCE
+add chain ip6 mangle PRE_Workstation
+add chain ip6 mangle PRE_Workstation_allow
+add chain ip6 mangle PRE_Workstation_deny
+add chain ip6 mangle PRE_Workstation_log
+add chain ip6 mangle INPUT { type filter hook input priority -150; }
+add chain ip6 mangle INPUT_direct
+add chain ip6 mangle FORWARD { type filter hook forward priority -150; policy accept; }
+add chain ip6 mangle FORWARD_direct
+add chain ip6 mangle OUTPUT { type route hook output priority -150; policy accept; }
+add chain ip6 mangle OUTPUT_direct
+add chain ip6 mangle POSTROUTING { type filter hook postrouting priority -150; policy accept; }
+add chain ip6 mangle POSTROUTING_direct
+
+add rule ip6 mangle PREROUTING counter jump PREROUTING_direct
+add rule ip6 mangle PREROUTING counter jump PREROUTING_ZONES
+add rule ip6 mangle PREROUTING counter jump PREROUTING_ZONES_SOURCE
+add rule ip6 mangle PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip6 mangle PRE_Workstation counter jump PRE_Workstation_log
+add rule ip6 mangle PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip6 mangle PRE_Workstation iif != "lo" ip6 saddr $blov6 counter drop
+add rule ip6 mangle PRE_Workstation iif != "lo" ip saddr $blov4 counter drop
+add rule ip6 mangle PRE_Workstation tcp dport $imapS ip6 daddr != $g6dns counter drop
+add rule ip6 mangle PRE_Workstation udp dport $imapS ip6 daddr != $g6dns counter drop
+add rule ip6 mangle PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip6 mangle INPUT counter jump INPUT_direct
+
+add rule ip6 mangle FORWARD counter jump FORWARD_direct
+
+add rule ip6 mangle OUTPUT counter jump OUTPUT_direct
+
+add rule ip6 mangle POSTROUTING counter jump POSTROUTING_direct
+
+
+####----IPv4 Nat Tables, Chains and Rules----####
+add table ip nat
+add chain ip nat PREROUTING { type nat hook prerouting priority -100; policy accept; }
+add chain ip nat PREROUTING_direct
+add chain ip nat PREROUTING_ZONES
+add chain ip nat PREROUTING_ZONES_SOURCE
+add chain ip nat PRE_Workstation
+add chain ip nat PRE_Workstation_allow
+add chain ip nat PRE_Workstation_deny
+add chain ip nat PRE_Workstation_log
+add chain ip nat INPUT { type nat hook input priority -100; policy accept; }
+add chain ip nat OUTPUT { type nat hook output priority -100; policy accept; }
+add chain ip nat OUTPUT_direct
+add chain ip nat POSTROUTING { type nat hook postrouting priority -100; policy accept; }
+add chain ip nat POSTROUTING_direct
+add chain ip nat POSTROUTING_ZONES
+add chain ip nat POSTROUTING_ZONES_SOURCE
+add chain ip nat POST_Workstation_allow
+add chain ip nat POST_Workstation_deny
+add chain ip nat POST_Workstation_log
+add chain ip nat POST_Workstation
+
+add rule ip nat PREROUTING counter jump PREROUTING_direct
+add rule ip nat PREROUTING counter jump PREROUTING_ZONES
+add rule ip nat PREROUTING counter jump PREROUTING_ZONES_SOURCE
+
+add rule ip nat PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip nat PRE_Workstation counter jump PRE_Workstation_log
+add rule ip nat PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip nat PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip nat POSTROUTING counter jump POSTROUTING_direct
+add rule ip nat POSTROUTING counter jump POSTROUTING_ZONES_SOURCE
+add rule ip nat POSTROUTING counter jump POSTROUTING_ZONES
+add rule ip nat POSTROUTING_ZONES counter goto POST_Workstation
+
+add rule ip nat POST_Workstation counter jump POST_Workstation_log
+add rule ip nat POST_Workstation counter jump POST_Workstation_deny
+add rule ip nat POST_Workstation counter jump POST_Workstation_allow
+
+add rule ip nat OUTPUT counter jump OUTPUT_direct
+
+####----IPv6 Nat Tables, Chains and Rules----####
+add table ip6 nat
+add chain ip6 nat PREROUTING { type nat hook prerouting priority -100; policy accept; }
+add chain ip6 nat PREROUTING_direct
+add chain ip6 nat PREROUTING_ZONES
+add chain ip6 nat PREROUTING_ZONES_SOURCE
+add chain ip6 nat PRE_Workstation
+add chain ip6 nat PRE_Workstation_allow
+add chain ip6 nat PRE_Workstation_deny
+add chain ip6 nat PRE_Workstation_log
+add chain ip6 nat INPUT { type nat hook input priority -100; policy accept; }
+add chain ip6 nat OUTPUT { type nat hook output priority -100; policy accept; }
+add chain ip6 nat OUTPUT_direct
+add chain ip6 nat POSTROUTING { type nat hook postrouting priority -100; policy accept; }
+add chain ip6 nat POSTROUTING_direct
+add chain ip6 nat POSTROUTING_ZONES
+add chain ip6 nat POSTROUTING_ZONES_SOURCE
+add chain ip6 nat POST_Workstation_allow
+add chain ip6 nat POST_Workstation_deny
+add chain ip6 nat POST_Workstation_log
+add chain ip6 nat POST_Workstation
+
+add rule ip6 nat PREROUTING counter jump PREROUTING_direct
+add rule ip6 nat PREROUTING counter jump PREROUTING_ZONES
+add rule ip6 nat PREROUTING counter jump PREROUTING_ZONES_SOURCE
+
+add rule ip6 nat PREROUTING_ZONES counter goto PRE_Workstation
+
+add rule ip6 nat PRE_Workstation counter jump PRE_Workstation_log
+add rule ip6 nat PRE_Workstation counter jump PRE_Workstation_deny
+add rule ip6 nat PRE_Workstation counter jump PRE_Workstation_allow
+
+add rule ip6 nat POSTROUTING counter jump POSTROUTING_direct
+add rule ip6 nat POSTROUTING counter jump POSTROUTING_ZONES_SOURCE
+add rule ip6 nat POSTROUTING counter jump POSTROUTING_ZONES
+add rule ip6 nat POSTROUTING_ZONES counter goto POST_Workstation
+
+add rule ip6 nat POST_Workstation counter jump POST_Workstation_log
+add rule ip6 nat POST_Workstation counter jump POST_Workstation_deny
+add rule ip6 nat POST_Workstation counter jump POST_Workstation_allow
+
+add rule ip6 nat OUTPUT counter jump OUTPUT_direct
+
+####----Inet Filter Tables, Chains and Rules----####
+add table inet filter
+
+add chain inet filter INPUT { type filter hook input priority 0; policy accept; }
+add chain inet filter INPUT_diect
+add chain inet filter INPUT_ZONES
+add chain inet filter INPUT_ZONES_SOURCE
+add chain inet filter IN_Workstation
+add chain inet filter IN_Workstation_allow
+add chain inet filter IN_Workstation_deny
+add chain inet filter IN_Workstation_log
+add chain inet filter FORWARD { type filter hook forward priority 0; policy accept; }
+add chain inet filter FORWARD_IN_ZONES
+add chain inet filter FORWARD_IN_ZONES_SOURCE
+add chain inet filter FWDI_Workstation
+add chain inet filter FWDI_Workstation_allow
+add chain inet filter FWDI_Workstation_deny
+add chain inet filter FWDI_Workstation_log
+add chain inet filter FORWARD_direct
+add chain inet filter FORWARD_OUT_ZONES
+add chain inet filter FORWARD_OUT_ZONES_SOURCE
+add chain inet filter FWDO_Workstation
+add chain inet filter FWDO_Workstation_allow
+add chain inet filter FWDO_Workstation_deny
+add chain inet filter FWDO_Workstation_log
+add chain inet filter OUTPUT { type filter hook output priority 0; policy accept; }
+add chain inet filter OUTPUT_direct
+
+add rule inet filter INPUT counter jump INPUT_direct
+add rule inet filter INPUT counter jump INPUT_ZONES
+add rule inet filter INPUT counter jump INPUT_ZONES_SOURCE
+add rule inet filter INPUT counter reject with icmp type host-prohibited
+add rule inet filter INPUT ct state invalid counter drop
+
+add rule inet filter IN_Workstation ip protocol icmp counter accept
+add rule inet filter IN_Workstation counter jump IN_Workstation_allow
+add rule inet filter IN_Workstation counter jump IN_Workstation_deny
+add rule inet filter IN_Workstation counter jump IN_Workstation_log
+
+add rule inet filter IN_Workstation_allow
+add rule inet filter IN_Workstation_deny
+add rule inet filter IN_Workstation_log
+
+add rule inet filter INPUT_ZONES counter goto IN_Workstation
+
+add rule inet filter FORWARD
+add rule inet filter FORWARD ct state related, established counter accept
+add rule inet filter FORWARD iifname "lo" counter accept
+add rule inet filter FORWARD counter jump FORWARD_direct
+add rule inet filter FORWARD counter jump FORWARD_IN_ZONES
+add rule inet filter FORWARD counter jump FORWARD_IN_ZONES_SOURCE
+add rule inet filter FORWARD counter jump FORWARD_OUT_ZONES
+add rule inet filter FORWARD counter jump FORWARD_OUT_ZONES_SOURCE
+add rule inet filter FORWARD_IN_ZONES counter goto FWDI_Workstation
+add rule inet filter FORWARD_OUT_ZONES counter goto FWDO_Workstation
+
+
+add rule inet filter FWDI_Workstation
+add rule inet filter FWDI_Workstation counter jump FWDI_Workstation_allow
+add rule inet filter FWDI_Workstation counter jump FWDI_Workstation_deny
+add rule inet filter FWDI_Workstation counter jump FWDI_Workstation_log
+
+add rule inet filter FWDO_Workstation counter jump FWDO_Workstation_allow
+add rule inet filter FWDO_Workstation counter jump FWDO_Workstation_deny
+add rule inet filter FWDO_Workstation counter jump FWDO_Workstation_log
+
+add rule inet filter OUTPUT oif "lo" counter accept
+add rule inet filter OUTPUT counter jump OUTPUT_direct
+
+####----Inet Security Table, Chains and Rules----####
+add table inet security
+add chain inet security INPUT { type filter hook input priority 0; policy accept; }
+add chain inet security INPUT_direct
+add chain inet security FORWARD { type filter hook forward priority 0; policy accept; }
+add chain inet security FORWARD_direct
+add chain inet security OUTPUT { type filter hook output priority 0; policy accept; }
+add chain inet security OUTPUT_direct
+
+add rule inet security INPUT counter jump INPUT_direct
+add rule inet security FORWARD counter jump FORWARD_direct
+add rule inet security OUTPUT counter jump OUTPUT_direct
+
+# Completed on Sat Aug 31 06:19:33 2019
+
+
