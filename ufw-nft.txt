@@ -1,0 +1,158 @@
+#!/usr/bin/nft -f
+
+table inet filter {
+	chain before-input {
+		iif "lo" counter accept
+		rt type 0 counter drop
+		ct state established,related counter  accept
+		icmpv6 type echo-reply counter accept
+		ct state invalid counter jump logging-deny
+		ct state invalid counter drop
+		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request } counter accept
+		icmpv6 type { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } ip6 hoplimit 255 counter accept
+		icmpv6 type { ind-neighbor-solicit, ind-neighbor-advert } ip6 hoplimit 255 counter accept
+		ip6 saddr fe80::/10 icmpv6 type { mld-listener-query, mld-listener-report, mld-listener-done, mld2-listener-report } counter accept
+		icmpv6 type { 148, 149 } ip6 hoplimit 255 counter accept
+		ip6 saddr fe80::/10 icmpv6 type { 151, 152, 153 } ip6 hoplimit 1 counter accept
+		ip6 saddr fe80::/10 ip6 daddr fe80::/10 udp sport 547 udp dport 546 counter accept
+		ip6 daddr ff02::fb udp dport 5353 counter accept
+		ip6 daddr ff02::f udp dport 1900 counter accept
+		icmp type { destination-unreachable, echo-request, time-exceeded, parameter-problem } counter accept
+		icmpv6 type { 144, 145, 146, 147 } counter accept
+		udp sport 67 udp dport 68 counter accept
+		counter jump not-local
+		ip daddr 224.0.0.251 udp dport 5353 counter accept
+		ip daddr 239.255.255.250 udp dport 1900 counter accept
+	}
+
+	chain before-logging-input {
+		ct state new limit rate 3/minute burst 10 packets counter log prefix "[NFT AUDIT] "
+	}
+
+	chain after-input {
+	}
+
+	chain after-logging-input {
+		limit rate 3/minute burst 10 packets counter packets 15 bytes 1800 log prefix "[NFT BLOCK] "
+	}
+
+	chain user-input {
+	}
+
+	chain user-logging-input {
+	}
+
+	chain user-limit {
+		limit rate 3/minute counter log prefix "[NFT LIMIT BLOCK] "
+		counter reject
+	}
+
+	chain user-limit-accept {
+		counter accept
+	}
+
+	chain before-forward {
+		rt type 0 counter drop
+		ct state established,related counter accept
+		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request, echo-reply } counter accept
+		icmp type { destination-unreachable, echo-request, time-exceeded, parameter-problem } counter accept
+	}
+
+	chain before-logging-forward {
+		ct state new limit rate 3/minute burst 10 packets counter log prefix "[NFT AUDIT] "
+	}
+
+	chain after-forward {
+	}
+
+	chain after-logging-forward {
+		limit rate 3/minute burst 10 packets counter log prefix "[NFT BLOCK] "
+	}
+
+	chain user-forward {
+	}
+
+	chain user-logging-forward {
+	}
+
+	chain before-output {
+		oif "lo" counter accept
+		rt type 0 counter drop
+		ct state established,related counter accept
+		icmpv6 type { destination-unreachable, packet-too-big, time-exceeded, parameter-problem, echo-request, echo-reply } counter accept
+		icmpv6 type { nd-router-solicit, nd-router-advert, nd-neighbor-solicit, nd-neighbor-advert } ip6 hoplimit 255 counter accept
+		icmpv6 type { ind-neighbor-solicit, ind-neighbor-advert } ip6 hoplimit 255 counter accept
+		ip6 saddr fe80::/10 icmpv6 type { mld-listener-query, mld-listener-report, mld-listener-done, mld2-listener-report } counter accept
+		icmpv6 type { 148, 149 } ip6 hoplimit 255 counter accept
+		ip6 saddr fe80::/10 icmpv6 type { 151, 152, 153 } ip6 hoplimit 1 counter accept
+	}
+
+	chain before-logging-output {
+		ct state new limit rate 3/minute burst 10 packets counter log prefix "[NFT AUDIT] "
+	}
+
+	chain after-output {
+	}
+
+	chain after-logging-output {
+		limit rate 3/minute burst 10 packets counter log prefix "[NFT ALLOW] "
+	}
+
+	chain user-output {
+	}
+
+	chain user-logging-output {
+	}
+
+	chain not-local {
+		fib daddr type { local, broadcast, multicast } counter return
+		limit rate 3/minute burst 10 packets counter jump logging-deny
+		counter drop
+	}
+
+	chain logging-deny {
+		ct state invalid limit rate 3/minute burst 10 packets counter log prefix "[NFT AUDIT INVALID] "
+		limit rate 3/minute burst 10 packets counter log prefix "[NFT BLOCK] "
+	}
+
+	chain logging-allow {
+		limit rate 3/minute burst 10 packets counter log prefix "[NFT ALLOW] "
+	}
+
+	chain input {
+		type filter hook input priority filter; policy accept;
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		ct state { invalid, untracked } jump after-logging-input
+		udp dport { 67, 68 } counter accept
+		udp dport { 546, 547 } counter accept
+		udp dport { 137, 138 } counter accept
+		tcp dport { 139, 445 } counter accept
+		counter drop
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy accept;
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		ct state { invalid, untracked } jump after-logging-forward
+		drop
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+		ct direction original counter accept
+		ct state { established, related } counter accept
+		ct status confirmed counter accept
+		ct state { invalid, untracked } jump after-logging-output
+		udp dport { 67, 68 } counter accept
+		udp dport { 546, 547 } counter accept
+		udp dport { 137, 138 } counter accept
+		tcp dport { 139, 445 } counter accept
+		counter accept
+	}
+}
+
+
